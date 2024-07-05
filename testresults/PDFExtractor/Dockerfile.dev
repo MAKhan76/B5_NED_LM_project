@@ -1,0 +1,37 @@
+# Use an official Python runtime as a parent image
+FROM python:3.12
+
+LABEL maintainer="Akbar Khan"
+
+# Set the working directory in the container
+WORKDIR /testresults
+
+# Install system dependencies required for potential Python packages
+# Using a single RUN command to reduce layers
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libpq-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Poetry at a specific version to ensure repeatable builds
+# Disabling virtualenvs is important to keep dependencies in the Docker layer
+RUN pip install poetry \
+    && poetry config virtualenvs.create false
+
+# Copy the poetry configuration files first to cache the dependencies layer
+COPY pyproject.toml poetry.lock* /testresults/
+
+# Install dependencies including development ones
+# --no-interaction: do not ask any interactive question
+# --no-root: Do not install the root project to avoid errors if it's not complete yet
+RUN poetry install --no-interaction --no-root
+
+# Copy the rest of the application
+COPY . /testresults
+
+# Make port 8501 available to the world outside this container
+EXPOSE 8501
+
+# Run the app. CMD can be overridden when starting the container
+CMD ["poetry", "run", "streamlit", "run", "pdfextractor/PDFReader.py", "--server.address=0.0.0.0"]

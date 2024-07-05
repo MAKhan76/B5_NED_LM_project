@@ -1,0 +1,15 @@
+version: "3.9"
+
+name: pdfextractor
+
+services:
+  extractor:
+    build:
+      context: ./pdfextractor
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8501:8501"  # Expose container port 8000 to host port 8000  
+    networks:
+      - my-net
+networks:
+  my-net:
